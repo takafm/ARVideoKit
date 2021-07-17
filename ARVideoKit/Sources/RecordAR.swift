@@ -177,6 +177,9 @@ import PhotosUI
     private var scnView: SCNView!
     private var fileCount = 0
     
+    //Used for fixing video latency
+    private var fixVideoLatencyTime: Double = 0.28 // About 17/60 ~= 0.283333... [sec]
+    
     var parent: UIViewController? {
         if let view = view as? ARSCNView {
             return view.parent!
@@ -801,6 +804,7 @@ extension RecordAR {
                         finalFrameTime = time
                     }
                     
+                    finalFrameTime = CMTimeSubtract(time, CMTime(seconds: self.fixVideoLatencyTime, preferredTimescale: 1000000))
                     frameWriter.insert(pixel: buffer, with: finalFrameTime!)
                     
                     guard let isWriting = frameWriter.isWritingWithoutError else { return }
