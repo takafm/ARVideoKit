@@ -125,6 +125,10 @@ import PhotosUI
         }
     }
     
+    //MARK: - Video quality setting
+    @objc public var resolutionType: RecordARResolutionType = .auto
+    public var compressionSetting: RecordARCompressionSetting = .auto
+    
     //MARK: - Public initialization methods
     /**
      Initialize 🌞🍳 `RecordAR` with an `ARSCNView` 🚀.
@@ -770,10 +774,11 @@ extension RecordAR {
             logAR.message("ERROR:- An error occurred while rendering the camera's main buffers.")
             return
         }
-        guard let size = renderer.bufferSize else {
+        guard var size = renderer.bufferSize else {
             logAR.message("ERROR:- An error occurred while rendering the camera buffer.")
             return
         }
+        size = adjustResolution(size)
 
         self.writerQueue.sync {
             
@@ -818,7 +823,7 @@ extension RecordAR {
                 } else {
                     self.currentVideoPath = self.newVideoPath
                     
-                    self.writer = WritAR(output: self.currentVideoPath!, width: Int(size.width), height: Int(size.height), adjustForSharing: self.adjustVideoForSharing, audioEnabled: self.enableAudio, orientaions: self.inputViewOrientations, queue: self.writerQueue, allowMix: self.enableMixWithOthers)
+                    self.writer = WritAR(output: self.currentVideoPath!, width: Int(size.width), height: Int(size.height), adjustForSharing: self.adjustVideoForSharing, audioEnabled: self.enableAudio, orientaions: self.inputViewOrientations, queue: self.writerQueue, allowMix: self.enableMixWithOthers, compSetting: self.compressionSetting)
                     self.writer?.videoInputOrientation = self.videoOrientation
                     self.writer?.delegate = self.delegate
                 }
@@ -842,5 +847,24 @@ extension RecordAR {
                 self.onlyRenderWhileRec = onlyRenderWhileRecording
             }
         }
+    }
+    
+    private func adjustResolution(_ size: CGSize) -> CGSize {
+        if resolutionType == .auto { return size }
+        
+        let ratio = size.height / size.width
+        var newSize = CGSize(width: 720.0, height: 1280.0)
+        
+        if resolutionType == .hd720pWidth {
+            newSize.width = 720.0
+            newSize.height = ratio * 720.0
+        } else if resolutionType == .fhd1080pWidth {
+            newSize.width = 1080.0
+            newSize.height = ratio * 1080.0
+        }
+        
+        print("[ARVideokit] - SET AR VIDEO RESOLUTION: \(newSize)")
+        
+        return newSize
     }
 }

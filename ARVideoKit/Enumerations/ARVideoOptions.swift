@@ -65,3 +65,16 @@ import Foundation
     // The current status of the Microphone access is disabled.
     case disabled
 }
+
+/// An object that returns the recording video width (height is belonging).
+@objc public enum RecordARResolutionType: Int {
+    case hd720pWidth
+    case fhd1080pWidth
+    case auto
+}
+
+/// An object that returns compression settings.
+public enum RecordARCompressionSetting {
+    case specifyBitrate(Int)
+    case auto
+}

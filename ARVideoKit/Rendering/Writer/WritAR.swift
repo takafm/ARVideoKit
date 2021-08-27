@@ -18,6 +18,7 @@ class WritAR: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
     private var session: AVCaptureSession!
     
     private var pixelBufferInput: AVAssetWriterInputPixelBufferAdaptor!
+    private var videoCompressionSettings: Dictionary<String, AnyObject>!
     private var videoOutputSettings: Dictionary<String, AnyObject>!
     private var audioSettings: [String: Any]?
 
@@ -28,7 +29,7 @@ class WritAR: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
     weak var delegate: RecordARDelegate?
     var videoInputOrientation: ARVideoOrientation = .auto
 
-    init(output: URL, width: Int, height: Int, adjustForSharing: Bool, audioEnabled: Bool, orientaions:[ARInputViewOrientation], queue: DispatchQueue, allowMix: Bool) {
+    init(output: URL, width: Int, height: Int, adjustForSharing: Bool, audioEnabled: Bool, orientaions:[ARInputViewOrientation], queue: DispatchQueue, allowMix: Bool, compSetting: RecordARCompressionSetting) {
         super.init()
         do {
             assetWriter = try AVAssetWriter(outputURL: output, fileType: AVFileType.mp4)
@@ -49,13 +50,26 @@ class WritAR: NSObject, AVCaptureAudioDataOutputSampleBufferDelegate {
             })
         }
         
-        //HEVC file format only supports A10 Fusion Chip or higher.
-        //to support HEVC, make sure to check if the device is iPhone 7 or higher
-        videoOutputSettings = [
-            AVVideoCodecKey: AVVideoCodecType.h264 as AnyObject,
-            AVVideoWidthKey: width as AnyObject,
-            AVVideoHeightKey: height as AnyObject
-        ]
+        if case let RecordARCompressionSetting.specifyBitrate(bitrate) = compSetting {
+            videoCompressionSettings = [
+                AVVideoH264EntropyModeKey: AVVideoH264EntropyModeCABAC as AnyObject,
+                AVVideoAverageBitRateKey: bitrate as AnyObject
+            ]
+            videoOutputSettings = [
+                AVVideoCodecKey: AVVideoCodecType.h264 as AnyObject,
+                AVVideoWidthKey: width as AnyObject,
+                AVVideoHeightKey: height as AnyObject,
+                AVVideoCompressionPropertiesKey: videoCompressionSettings as AnyObject
+            ]
+        } else {
+            //HEVC file format only supports A10 Fusion Chip or higher.
+            //to support HEVC, make sure to check if the device is iPhone 7 or higher
+            videoOutputSettings = [
+                AVVideoCodecKey: AVVideoCodecType.h264 as AnyObject,
+                AVVideoWidthKey: width as AnyObject,
+                AVVideoHeightKey: height as AnyObject
+            ]
+        }
         
         let attributes: [String: Bool] = [
             kCVPixelBufferCGImageCompatibilityKey as String: true,
